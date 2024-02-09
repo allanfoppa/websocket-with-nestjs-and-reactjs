@@ -1,42 +1,44 @@
 import React, { useContext, useEffect, useState } from 'react';
-import './App.css';
 import { WebsocketContext } from './contexts/WebsocketContext';
 import { CardComponent } from './components/Data Display/Card';
-import {
-  Alert, AlertDescription, AlertIcon, AlertTitle,
-  Box, Flex, HStack, Img
-} from "@chakra-ui/react";
+import { Flex, HStack } from "@chakra-ui/react";
 import { FormComponent } from './components/Forms/Form';
 import { useToastHook } from './hooks/useToats';
-
-import logo from './assets/images/logo.png';
+import { NoPeopleRegistered } from './components/Feedback/NoPeopleRegistered';
+import { Logo } from './components/Media and Icons/Logo';
+import { ToggleTheme } from './components/Media and Icons/ToggleTheme';
 
 function App() {
 
   const socket = useContext(WebsocketContext);
+
   const [ state, newToast ] = useToastHook();
 
   const [ people, setPeople ] = useState([]);
-  const [ tasks, setTasks ] = useState([]);
-  const [ taskInput, setTaskInput ] = useState("");
+  const [ nameInput, setNameInput ] = useState("");
 
   useEffect(() => {
 
     socket.emit('fetchPeople', {});
 
-    // SEE HOW JOIN RESPONSES
+    // TODO: SEE HOW JOIN RESPONSES
     // PROBABLY SWITCH CASE
     socket.on('fetchPeopleResponse', (data) => {
       setPeople(data);
     });
 
     socket.on('addPersonResponse', (data) => {
-      newToast({ message: `Person ${data.person.name} added with success!`, status: "success" });
+      newToast({ message: `${data.person.name} added with success!`, status: "success" });
+      setPeople(data.people);
+    });
+
+    socket.on('editPersonResponse', (data) => {
+      newToast({ message: `Updated with success!`, status: "success" });
       setPeople(data.people);
     });
 
     socket.on('deletePersonResponse', (data) => {
-      newToast({ message: `Person deleted with success!`, status: "success" });
+      newToast({ message: `Deleted with success!`, status: "success" });
       setPeople(data.people);
     });
 
@@ -49,32 +51,32 @@ function App() {
       socket.off("fetchPeople");
       socket.off("fetchPeopleResponse");
       socket.off("addPersonResponse");
+      socket.off("editPersonResponse");
       socket.off("deletePersonResponse");
       socket.off("responseError");
     };
 
   }, [socket]);
 
+  // CHANGE NAME INPUT
   const handleChangeInput = (e) => {
-    setTaskInput(e.currentTarget.value);
+    setNameInput(e.currentTarget.value);
   };
 
   // CREATE PERSON
   const handleCreatePerson = () => {
-    socket.emit('addPerson', taskInput);
+    socket.emit('addPerson', nameInput);
+    setNameInput('')
   };
 
   // DELETE PERSON
   const handleRemovePerson = (id) => {
-    console.log("[iddddd]", id);
     socket.emit('deletePerson', id);
   };
 
   // EDIT PERSON
-  const handleEditPerson = (id) => {
-    setTasks((prev) =>
-      prev.map((task) => (task.id === id ? { ...task, status: false } : task))
-    );
+  const handleEditPerson = (id, name) => {
+    socket.emit('editPerson', { id, name });
   };
 
   return (
@@ -85,12 +87,13 @@ function App() {
       flexDirection="column"
       p={10}
     >
+      <ToggleTheme />
       <Flex w="full" maxWidth={400} flexDirection="column" gap={4}>
-        <Img src={logo} alt="Logo" />
+        <Logo />
 
         <FormComponent
           changeInput={handleChangeInput}
-          value={taskInput}
+          value={nameInput}
           createPerson={handleCreatePerson}
         />
 
@@ -101,17 +104,15 @@ function App() {
               id={person.id}
               label={person.name}
               status={person.status}
+              editPerson={(inputValue) => {
+                console.log("[e]", inputValue);
+                handleEditPerson(person.id, inputValue)
+              }}
               removePerson={() => handleRemovePerson(person.id)}
             />
           ))
         ) : (
-          <Alert status="info" borderRadius={6}>
-            <AlertIcon />
-            <Box>
-              <AlertTitle>No person registered!</AlertTitle>
-              <AlertDescription>Start registering and have fun. ;)</AlertDescription>
-            </Box>
-          </Alert>
+          <NoPeopleRegistered />
         )}
 
       </Flex>

@@ -1,10 +1,11 @@
-
 import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConnectedSocket, MessageBody, SubscribeMessage, WebSocketGateway, WebSocketServer } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { PeopleService } from './people.service';
 
-@WebSocketGateway({ cors: true })
+@WebSocketGateway({
+  cors: true
+})
 export class PeopleGateway implements OnModuleInit, OnModuleDestroy {
 
   constructor(
@@ -14,11 +15,11 @@ export class PeopleGateway implements OnModuleInit, OnModuleDestroy {
   @WebSocketServer()
   server: Server;
 
-  tunnelID: string;
+  connectionID: string;
 
   onModuleInit() {
     this.server.on('connection', (socket) => {
-      this.tunnelID = socket.id
+      this.connectionID = socket.id
       console.log('Connected to people tunnel');
     });
   }
@@ -30,7 +31,9 @@ export class PeopleGateway implements OnModuleInit, OnModuleDestroy {
   }
 
   @SubscribeMessage('fetchPeople') // Listen for 'fetchPeople' message from client
-  async handleGetPeopleList(@ConnectedSocket() client: Socket) {
+  async handleGetPeopleList(
+    @ConnectedSocket() client: Socket
+  ) {
     try {;
       client.emit('fetchPeopleResponse', this.peopleService.getPeople());
     } catch (error) {
@@ -41,9 +44,12 @@ export class PeopleGateway implements OnModuleInit, OnModuleDestroy {
   }
 
   @SubscribeMessage('addPerson') // Listen for 'addPerson' message from client
-  async handleAddPerson(@MessageBody() data: any, @ConnectedSocket() client: Socket) {
+  async handleAddPerson(
+    @MessageBody() name: string,
+    @ConnectedSocket() client: Socket
+  ) {
     try {
-      let addedPerson = this.peopleService.addPerson(data);
+      let addedPerson = this.peopleService.addPerson(name);
       this.server.emit('addPersonResponse', {
         person: addedPerson,
         people: this.peopleService.getPeople()
@@ -56,11 +62,13 @@ export class PeopleGateway implements OnModuleInit, OnModuleDestroy {
   }
 
   @SubscribeMessage('editPerson') // Listen for 'editPerson' message from client
-  async handleEditPerson(@MessageBody() data: any, @ConnectedSocket() client: Socket) {
+  async handleEditPerson(
+    @MessageBody() body: { id: string, name: string },
+    @ConnectedSocket() client: Socket
+  ) {
     try {
-      let addedPerson = this.peopleService.updatePerson(data.id, data.name);
+      this.peopleService.updatePerson(body.id, body.name);
       this.server.emit('editPersonResponse', {
-        person: addedPerson,
         people: this.peopleService.getPeople()
       });
     } catch (error) {
@@ -71,7 +79,10 @@ export class PeopleGateway implements OnModuleInit, OnModuleDestroy {
   }
 
   @SubscribeMessage('deletePerson') // Listen for 'deletePerson' message from client
-  async handleDeletePerson(@MessageBody() id: string, @ConnectedSocket() client: Socket) {
+  async handleDeletePerson(
+    @MessageBody() id: string,
+    @ConnectedSocket() client: Socket
+  ) {
     try {
       let deletedPerson = this.peopleService.deletePerson(id);
       this.server.emit('deletePersonResponse', {
