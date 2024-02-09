@@ -37,12 +37,14 @@ This is an example of how you may give instructions on setting up your project l
 2. Run a server command
 
    ```shell
+   npm i # if first time
    npm run start:dev
    ```
 
 3. Run a client command
 
    ```shell
+   npm i # if first time
    npm run start
    ```
 
