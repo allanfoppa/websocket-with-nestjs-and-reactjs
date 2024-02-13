@@ -4,7 +4,7 @@
 <!-- markdownlint-disable -->
 <div align="center" style="margin-top: 24px">
   <img src="./client/src/assets/images/logo.png" alt="Logo" />
-  <h3 align="center">A server/cliente application to train NestJS, React, Websocket, Chakra UI.</h3>
+  <h3 align="center">A server/client application to train NestJS, React, Websocket, Chakra UI.</h3>
 </div>
 <!-- markdownlint-disable -->
 
